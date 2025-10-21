@@ -14,10 +14,10 @@
 
   <script type="text/babel">
     const PRODUCTS = [
-      { id: 'svc-assess', title: 'Structural Assessment & Audit', description: 'Comprehensive building evaluation: visual inspection, core sampling, and material testing.', details: 'This service includes on-site inspection, material testing, and comprehensive analysis reports to ensure structural integrity.', price: 15000 },
-      { id: 'svc-design', title: 'Retrofitting Design & Simulation', description: 'ETABS/STAAD/SAP2000 modelling and retrofit design packages.', details: 'We provide seismic design simulations, structural modelling, and compliant retrofit planning for safety and efficiency.', price: 35000 },
-      { id: 'svc-impl', title: 'Implementation & Retrofitting', description: 'On-site retrofitting works with certified engineers and quality materials.', details: 'Includes site supervision, material procurement, and quality assurance processes for retrofitting projects.', price: 150000 },
-      { id: 'svc-training', title: 'Consultation & Training Session', description: 'Workshops for LGUs, schools, and building owners on disaster preparedness.', details: 'Interactive seminars and customized training programs for earthquake preparedness and risk management.', price: 7000 },
+      { id: 'svc-assess', title: 'Structural Assessment & Audit', image: 'https://cdn.pixabay.com/photo/2016/11/18/15/36/construction-1837478_1280.jpg', description: 'Comprehensive building evaluation and testing.', details: 'Includes structural inspection, material testing, and detailed analysis report. We use advanced equipment like rebound hammers and ultrasonic testers to detect internal weaknesses. Suitable for residential, commercial, and government infrastructures.', price: 15000 },
+      { id: 'svc-design', title: 'Retrofitting Design & Simulation', image: 'https://cdn.pixabay.com/photo/2017/03/02/14/26/architecture-2111536_1280.jpg', description: 'Simulation and redesigning of weak structures.', details: 'Our design engineers utilize ETABS, STAAD, and SAP2000 to model and simulate structural improvements. We ensure compliance with the National Structural Code of the Philippines. Deliverables include retrofit drawings, calculations, and cost estimates.', price: 35000 },
+      { id: 'svc-impl', title: 'Implementation & Retrofitting', image: 'https://cdn.pixabay.com/photo/2016/02/29/00/46/architecture-1227497_1280.jpg', description: 'Actual implementation of retrofitting plans.', details: 'We perform on-site structural reinforcement and rehabilitation, using materials like fiber-reinforced polymer (FRP), steel jacketing, and concrete overlays. Our certified engineers supervise every step to guarantee safety and durability.', price: 150000 },
+      { id: 'svc-training', title: 'Consultation & Training Session', image: 'https://cdn.pixabay.com/photo/2016/11/29/05/08/adult-1867480_1280.jpg', description: 'Workshops and training for disaster resilience.', details: 'We conduct customized training programs for local government units, schools, and private institutions. Topics include earthquake preparedness, damage assessment, and emergency retrofitting methods. Participants receive completion certificates.', price: 7000 },
     ];
 
     function App() {
@@ -97,6 +97,7 @@
           <div className="grid md:grid-cols-2 gap-4">
             {products.map((p) => (
               <div key={p.id} className="bg-white p-4 rounded shadow">
+                <img src={p.image} alt={p.title} className="rounded mb-3 h-40 w-full object-cover" />
                 <h3 className="font-semibold">{p.title}</h3>
                 <p className="text-sm text-gray-600">{p.description}</p>
                 <div className="mt-3 flex justify-between">
@@ -117,6 +118,7 @@
       return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded shadow-lg w-11/12 md:w-1/2">
+            <img src={product.image} alt={product.title} className="rounded mb-4 w-full h-56 object-cover" />
             <h2 className="text-2xl font-semibold mb-2">{product.title}</h2>
             <p className="text-gray-700 mb-4">{product.details}</p>
             <p className="font-bold mb-4">Price: ₱{product.price.toLocaleString()}</p>
@@ -164,8 +166,9 @@
       const [email, setEmail] = React.useState('');
       const [pm, setPm] = React.useState('cod');
       const [bank, setBank] = React.useState('');
+      const [account, setAccount] = React.useState('');
       const [note, setNote] = React.useState('');
-      const submit = (e) => { e.preventDefault(); onPlaceOrder({ name, email, paymentMethod: pm, paymentNote: note, bank }); };
+      const submit = (e) => { e.preventDefault(); onPlaceOrder({ name, email, paymentMethod: pm, paymentNote: note, bank, account }); };
 
       return (
         <form onSubmit={submit} className="bg-white p-6 rounded shadow space-y-3">
@@ -189,7 +192,7 @@
                   <option value="BDO">BDO</option>
                   <option value="BPI">BPI</option>
                 </select>
-                <input placeholder="Payment reference or depositor name" value={note} onChange={(e) => setNote(e.target.value)} className="w-full border rounded px-3 py-2" required />
+                <input placeholder="Account Number" value={account} onChange={(e) => setAccount(e.target.value)} className="w-full border rounded px-3 py-2" required />
               </div>
             )}
 
@@ -215,6 +218,7 @@
               <p className="mt-2">Order ID: <strong>{order.id}</strong></p>
               <p>Payment: {order.paymentMethod.toUpperCase()}</p>
               {order.bank && <p>Bank: {order.bank}</p>}
+              {order.account && <p>Account Number: {order.account}</p>}
               <button onClick={() => { setCancelled(true); onCancel(); }} className="mt-4 bg-red-600 text-white px-4 py-2 rounded">Cancel Order</button>
             </>
           ) : (
@@ -225,17 +229,17 @@
     }
 
     function AIAssistant() {
-      const [messages, setMessages] = React.useState([{ from: 'assistant', text: "Hello! I'm SafeBot. How can I assist you today? You can ask about services, pricing, or order tracking." }]);
+      const [messages, setMessages] = React.useState([{ from: 'assistant', text: "Hello! I'm SafeBot. Ask me about services, pricing, or order tracking!" }]);
       const [input, setInput] = React.useState('');
       const send = (e) => {
         e.preventDefault();
         if (!input.trim()) return;
         const msg = input.toLowerCase();
         let response = '';
-        if (msg.includes('service')) response = 'We offer: Structural Assessment, Retrofitting Design, Implementation, and Training. Click the service details for more info.';
+        if (msg.includes('service')) response = 'We offer: Structural Assessment, Retrofitting Design, Implementation, and Training. Click service details for full info.';
         else if (msg.includes('price')) response = 'Prices range from ₱7,000 for training to ₱150,000 for implementation packages.';
-        else if (msg.includes('track') || msg.includes('order')) response = 'Please provide your order ID (e.g. SB-12345) for tracking.';
-        else response = "I'm here to help with services, pricing, or tracking questions.";
+        else if (msg.includes('track') || msg.includes('order')) response = 'Please provide your order ID (e.g. SB-12345) to check status.';
+        else response = "I can help with questions about services, payment methods, or tracking.";
         setMessages([...messages, { from: 'user', text: input }, { from: 'assistant', text: response }]);
         setInput('');
       };
