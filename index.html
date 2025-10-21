@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafeBuild Engineering Solutions</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-900">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const PRODUCTS = [
+      { id: 'svc-assess', title: 'Structural Assessment & Audit', description: 'Comprehensive building evaluation: visual inspection, core sampling, and material testing.', details: 'This service includes on-site inspection, material testing, and comprehensive analysis reports to ensure structural integrity.', price: 15000 },
+      { id: 'svc-design', title: 'Retrofitting Design & Simulation', description: 'ETABS/STAAD/SAP2000 modelling and retrofit design packages.', details: 'We provide seismic design simulations, structural modelling, and compliant retrofit planning for safety and efficiency.', price: 35000 },
+      { id: 'svc-impl', title: 'Implementation & Retrofitting', description: 'On-site retrofitting works with certified engineers and quality materials.', details: 'Includes site supervision, material procurement, and quality assurance processes for retrofitting projects.', price: 150000 },
+      { id: 'svc-training', title: 'Consultation & Training Session', description: 'Workshops for LGUs, schools, and building owners on disaster preparedness.', details: 'Interactive seminars and customized training programs for earthquake preparedness and risk management.', price: 7000 },
+    ];
+
+    function App() {
+      const [cart, setCart] = React.useState({});
+      const [view, setView] = React.useState('shop');
+      const [order, setOrder] = React.useState(null);
+      const [selectedProduct, setSelectedProduct] = React.useState(null);
+
+      const add = (p) => setCart((c) => ({ ...c, [p.id]: { ...p, qty: (c[p.id]?.qty || 0) + 1 } }));
+      const remove = (id) => setCart((c) => { const copy = { ...c }; delete copy[id]; return copy; });
+      const updateQty = (id, qty) => setCart((c) => { const copy = { ...c }; copy[id].qty = qty; if (qty <= 0) delete copy[id]; return copy; });
+      const clear = () => setCart({});
+
+      const subtotal = Object.values(cart).reduce((s, p) => s + p.price * p.qty, 0);
+
+      return (
+        <div className="min-h-screen">
+          <header className="bg-white shadow-sm">
+            <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between">
+              <div>
+                <h1 className="text-xl font-bold">SafeBuild Engineering Solutions</h1>
+                <p className="text-sm text-gray-500">Seismic retrofitting & disaster-resilient services</p>
+              </div>
+              <nav className="flex items-center gap-4">
+                <button onClick={() => setView('shop')} className="text-sm">Shop</button>
+                <button onClick={() => setView('cart')} className="text-sm">View Cart</button>
+                <button onClick={() => setView('checkout')} className="text-sm">Checkout</button>
+                <CartButton cart={cart} />
+              </nav>
+            </div>
+          </header>
+
+          <main className="max-w-6xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <section className="lg:col-span-2">
+              {view === 'shop' && <Shop products={PRODUCTS} onAdd={add} onViewDetails={setSelectedProduct} />}
+              {view === 'cart' && <CartPage cart={cart} subtotal={subtotal} remove={remove} updateQty={updateQty} setView={setView} />}
+              {view === 'checkout' && (
+                <Checkout
+                  cart={cart}
+                  subtotal={subtotal}
+                  onPlaceOrder={(data) => {
+                    const id = 'SB-' + Date.now();
+                    setOrder({ id, ...data, total: subtotal });
+                    clear();
+                    setView('confirm');
+                  }}
+                />
+              )}
+              {view === 'confirm' && order && (
+                <OrderConfirm order={order} onCancel={() => setOrder(null)} />
+              )}
+            </section>
+            <aside className="space-y-4">
+              <div className="bg-white p-4 rounded shadow">
+                <h3 className="font-semibold">AI Assistant</h3>
+                <AIAssistant />
+              </div>
+            </aside>
+          </main>
+
+          {selectedProduct && (
+            <ServiceModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
+          )}
+        </div>
+      );
+    }
+
+    function CartButton({ cart }) {
+      const count = Object.values(cart).reduce((s, p) => s + p.qty, 0);
+      return <button className="relative">🛒<span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1">{count}</span></button>;
+    }
+
+    function Shop({ products, onAdd, onViewDetails }) {
+      return (
+        <div>
+          <h2 className="text-2xl font-semibold mb-4">Services</h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            {products.map((p) => (
+              <div key={p.id} className="bg-white p-4 rounded shadow">
+                <h3 className="font-semibold">{p.title}</h3>
+                <p className="text-sm text-gray-600">{p.description}</p>
+                <div className="mt-3 flex justify-between">
+                  <span className="font-bold">₱{p.price.toLocaleString()}</span>
+                  <div className="flex gap-2">
+                    <button onClick={() => onViewDetails(p)} className="border border-blue-600 text-blue-600 px-3 py-1 rounded">Details</button>
+                    <button onClick={() => onAdd(p)} className="bg-blue-600 text-white px-3 py-1 rounded">Add</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function ServiceModal({ product, onClose }) {
+      return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded shadow-lg w-11/12 md:w-1/2">
+            <h2 className="text-2xl font-semibold mb-2">{product.title}</h2>
+            <p className="text-gray-700 mb-4">{product.details}</p>
+            <p className="font-bold mb-4">Price: ₱{product.price.toLocaleString()}</p>
+            <button onClick={onClose} className="bg-blue-600 text-white px-4 py-2 rounded">Close</button>
+          </div>
+        </div>
+      );
+    }
+
+    function CartPage({ cart, subtotal, remove, updateQty, setView }) {
+      const items = Object.values(cart);
+      return (
+        <div className="bg-white p-6 rounded shadow">
+          <h2 className="text-2xl font-semibold mb-4">Your Cart</h2>
+          {items.length === 0 ? (
+            <p className="text-gray-600">Your cart is empty.</p>
+          ) : (
+            <>
+              <ul className="space-y-3">
+                {items.map((it) => (
+                  <li key={it.id} className="flex justify-between items-center">
+                    <div>
+                      <p className="font-medium">{it.title}</p>
+                      <p className="text-sm text-gray-500">₱{it.price.toLocaleString()}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input type="number" min="1" value={it.qty} onChange={(e) => updateQty(it.id, Number(e.target.value))} className="w-16 border rounded px-2 py-1 text-sm" />
+                      <button onClick={() => remove(it.id)} className="text-red-500 text-sm">Remove</button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-4 flex justify-between border-t pt-3">
+                <span className="font-semibold">Subtotal: ₱{subtotal.toLocaleString()}</span>
+                <button onClick={() => setView('checkout')} className="bg-green-600 text-white px-4 py-2 rounded">Proceed to Checkout</button>
+              </div>
+            </>
+          )}
+        </div>
+      );
+    }
+
+    function Checkout({ cart, subtotal, onPlaceOrder }) {
+      const [name, setName] = React.useState('');
+      const [email, setEmail] = React.useState('');
+      const [pm, setPm] = React.useState('cod');
+      const [bank, setBank] = React.useState('');
+      const [note, setNote] = React.useState('');
+      const submit = (e) => { e.preventDefault(); onPlaceOrder({ name, email, paymentMethod: pm, paymentNote: note, bank }); };
+
+      return (
+        <form onSubmit={submit} className="bg-white p-6 rounded shadow space-y-3">
+          <h2 className="text-xl font-semibold">Checkout</h2>
+          <input placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} className="w-full border rounded px-3 py-2" required />
+          <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border rounded px-3 py-2" required />
+
+          <div>
+            <label className="block text-sm">Payment method</label>
+            <select value={pm} onChange={(e) => setPm(e.target.value)} className="border rounded px-3 py-2 w-full">
+              <option value="cod">Cash on Delivery (COD)</option>
+              <option value="bank">Bank Transfer</option>
+              <option value="gcash">GCash</option>
+            </select>
+
+            {pm === 'bank' && (
+              <div className="mt-2 space-y-2">
+                <select value={bank} onChange={(e) => setBank(e.target.value)} className="border rounded px-3 py-2 w-full" required>
+                  <option value="">Select Bank</option>
+                  <option value="Metrobank">Metrobank</option>
+                  <option value="BDO">BDO</option>
+                  <option value="BPI">BPI</option>
+                </select>
+                <input placeholder="Payment reference or depositor name" value={note} onChange={(e) => setNote(e.target.value)} className="w-full border rounded px-3 py-2" required />
+              </div>
+            )}
+
+            {pm === 'gcash' && (
+              <input placeholder="GCash number or reference" value={note} onChange={(e) => setNote(e.target.value)} className="w-full border rounded px-3 py-2 mt-2" required />
+            )}
+          </div>
+          <div className="flex justify-between border-t pt-3">
+            <span>Total: ₱{subtotal.toLocaleString()}</span>
+            <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded">Place Order</button>
+          </div>
+        </form>
+      );
+    }
+
+    function OrderConfirm({ order, onCancel }) {
+      const [cancelled, setCancelled] = React.useState(false);
+      return (
+        <div className="bg-white p-6 rounded shadow">
+          {!cancelled ? (
+            <>
+              <h2 className="text-2xl font-semibold">Order Confirmed</h2>
+              <p className="mt-2">Order ID: <strong>{order.id}</strong></p>
+              <p>Payment: {order.paymentMethod.toUpperCase()}</p>
+              {order.bank && <p>Bank: {order.bank}</p>}
+              <button onClick={() => { setCancelled(true); onCancel(); }} className="mt-4 bg-red-600 text-white px-4 py-2 rounded">Cancel Order</button>
+            </>
+          ) : (
+            <p className="text-red-600 font-semibold">Your order has been cancelled.</p>
+          )}
+        </div>
+      );
+    }
+
+    function AIAssistant() {
+      const [messages, setMessages] = React.useState([{ from: 'assistant', text: "Hello! I'm SafeBot. How can I assist you today? You can ask about services, pricing, or order tracking." }]);
+      const [input, setInput] = React.useState('');
+      const send = (e) => {
+        e.preventDefault();
+        if (!input.trim()) return;
+        const msg = input.toLowerCase();
+        let response = '';
+        if (msg.includes('service')) response = 'We offer: Structural Assessment, Retrofitting Design, Implementation, and Training. Click the service details for more info.';
+        else if (msg.includes('price')) response = 'Prices range from ₱7,000 for training to ₱150,000 for implementation packages.';
+        else if (msg.includes('track') || msg.includes('order')) response = 'Please provide your order ID (e.g. SB-12345) for tracking.';
+        else response = "I'm here to help with services, pricing, or tracking questions.";
+        setMessages([...messages, { from: 'user', text: input }, { from: 'assistant', text: response }]);
+        setInput('');
+      };
+      return (
+        <div className="flex flex-col h-80">
+          <div className="flex-1 overflow-auto space-y-2 bg-gray-50 p-2 rounded">
+            {messages.map((m, i) => <div key={i} className={m.from === 'assistant' ? 'bg-white p-2 rounded shadow text-sm' : 'text-right text-sm text-blue-700'}>{m.text}</div>)}
+          </div>
+          <form onSubmit={send} className="mt-2 flex gap-2">
+            <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask SafeBot..." className="flex-1 border rounded px-3 py-2 text-sm" />
+            <button className="bg-blue-600 text-white px-3 py-2 rounded text-sm">Send</button>
+          </form>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
