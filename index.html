@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SafeBuild Engineering Solutions</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SafeBuild — Consultation & Booking</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -13,59 +13,94 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const PRODUCTS = [
-      { id: 'svc-assess', title: 'Structural Assessment & Audit', image: 'images/assessment.jpg', description: 'Comprehensive building evaluation and testing.', details: 'Includes structural inspection, material testing, and detailed analysis report. We use advanced equipment like rebound hammers and ultrasonic testers to detect internal weaknesses. Suitable for residential, commercial, and government infrastructures.', price: 15000 },
-      { id: 'svc-design', title: 'Retrofitting Design & Simulation', image: 'images/design.jpg', description: 'Simulation and redesigning of weak structures.', details: 'Our design engineers utilize ETABS, STAAD, and SAP2000 to model and simulate structural improvements. We ensure compliance with the National Structural Code of the Philippines. Deliverables include retrofit drawings, calculations, and cost estimates.', price: 35000 },
-      { id: 'svc-impl', title: 'Implementation & Retrofitting', image: 'images/implementation.jpg', description: 'Actual implementation of retrofitting plans.', details: 'We perform on-site structural reinforcement and rehabilitation, using materials like fiber-reinforced polymer (FRP), steel jacketing, and concrete overlays. Our certified engineers supervise every step to guarantee safety and durability.', price: 150000 },
-      { id: 'svc-training', title: 'Consultation & Training Session', image: 'images/training.jpg', description: 'Workshops and training for disaster resilience.', details: 'We conduct customized training programs for local government units, schools, and private institutions. Topics include earthquake preparedness, damage assessment, and emergency retrofitting methods. Participants receive completion certificates.', price: 7000 },
+    /* ===========================
+       Product / Service data
+       (uses local images in images/*.jpg)
+       =========================== */
+    const SERVICES = [
+      {
+        id: 'svc-assess',
+        title: 'Structural Assessment & Audit',
+        image: 'images/assessment.jpg',
+        description: 'Comprehensive building evaluation and testing.',
+        details: 'Includes structural inspection, material testing, and detailed analysis report. We use advanced equipment such as rebound hammers and ultrasonic testers to detect internal weaknesses.',
+        price: 15000
+      },
+      {
+        id: 'svc-design',
+        title: 'Retrofitting Design & Simulation',
+        image: 'images/design.jpg',
+        description: 'Simulation and redesigning of weak structures.',
+        details: 'ETABS/STAAD/SAP2000 modelling, seismic simulation, retrofit drawings and cost estimates. Ensures local code compliance.',
+        price: 35000
+      },
+      {
+        id: 'svc-impl',
+        title: 'Implementation & Retrofitting',
+        image: 'images/implementation.jpg',
+        description: 'On-site implementation of retrofit plans.',
+        details: 'On-site structural reinforcement using FRP, steel jacketing and concrete overlays. Supervised by certified engineers.',
+        price: 150000
+      },
+      {
+        id: 'svc-training',
+        title: 'Consultation & Training Session',
+        image: 'images/training.jpg',
+        description: 'Workshops and training for disaster resilience.',
+        details: 'Customized training programs for LGUs, schools, and private institutions. Participants receive completion certificates.',
+        price: 7000
+      }
     ];
 
-    function App() {
-      const [cart, setCart] = React.useState({});
-      const [view, setView] = React.useState('shop');
-      const [order, setOrder] = React.useState(null);
-      const [selectedProduct, setSelectedProduct] = React.useState(null);
+    /* ===========================
+       Utility: generate booking id
+       =========================== */
+    function genBookingId() {
+      return 'BK-' + Date.now();
+    }
 
-      const add = (p) => setCart((c) => ({ ...c, [p.id]: { ...p, qty: (c[p.id]?.qty || 0) + 1 } }));
-      const remove = (id) => setCart((c) => { const copy = { ...c }; delete copy[id]; return copy; });
-      const updateQty = (id, qty) => setCart((c) => { const copy = { ...c }; copy[id].qty = qty; if (qty <= 0) delete copy[id]; return copy; });
-      const clear = () => setCart({});
-      const subtotal = Object.values(cart).reduce((s, p) => s + p.price * p.qty, 0);
+    /* ===========================
+       Root App
+       =========================== */
+    function App() {
+      const [view, setView] = React.useState('services'); // services | bookings | booking-confirm
+      const [selectedService, setSelectedService] = React.useState(null);
+      const [bookings, setBookings] = React.useState([]); // in-memory
+      const [currentBooking, setCurrentBooking] = React.useState(null); // after confirm -> show details
+      const [showReceipt, setShowReceipt] = React.useState(null);
 
       return (
         <div className="min-h-screen">
           <header className="bg-white shadow-sm">
-            <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between">
+            <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
               <div>
-                <h1 className="text-xl font-bold">SafeBuild Engineering Solutions</h1>
-                <p className="text-sm text-gray-500">Seismic retrofitting & disaster-resilient services</p>
+                <h1 className="text-xl font-bold">SafeBuild Consultation & Booking</h1>
+                <p className="text-sm text-gray-500">Book consultations, site assessments, and training sessions</p>
               </div>
               <nav className="flex items-center gap-4">
-                <button onClick={() => setView('shop')} className="text-sm">Shop</button>
-                <button onClick={() => setView('cart')} className="text-sm">View Cart</button>
-                <button onClick={() => setView('checkout')} className="text-sm">Checkout</button>
-                <CartButton cart={cart} />
+                <button onClick={() => setView('services')} className="text-sm">Services</button>
+                <button onClick={() => setView('bookings')} className="text-sm">My Appointments</button>
+                <CartButtonPlaceholder />
               </nav>
             </div>
           </header>
 
           <main className="max-w-6xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
             <section className="lg:col-span-2">
-              {view === 'shop' && <Shop products={PRODUCTS} onAdd={add} onViewDetails={setSelectedProduct} />}
-              {view === 'cart' && <CartPage cart={cart} subtotal={subtotal} remove={remove} updateQty={updateQty} setView={setView} />}
-              {view === 'checkout' && (
-                <Checkout
-                  cart={cart}
-                  subtotal={subtotal}
-                  onPlaceOrder={(data) => {
-                    const id = 'SB-' + Date.now();
-                    setOrder({ id, ...data, total: subtotal });
-                    clear();
-                    setView('confirm');
-                  }}
+              {view === 'services' && (
+                <ServiceList
+                  services={SERVICES}
+                  onBook={(s) => { setSelectedService(s); }}
                 />
               )}
-              {view === 'confirm' && order && <OrderConfirm order={order} onCancel={() => setOrder(null)} />}
+
+              {view === 'bookings' && (
+                <BookingHistory bookings={bookings} />
+              )}
+
+              {view === 'booking-confirm' && currentBooking && (
+                <BookingConfirm booking={currentBooking} onCancel={() => setCurrentBooking(null)} />
+              )}
             </section>
 
             <aside className="space-y-4">
@@ -73,34 +108,64 @@
                 <h3 className="font-semibold">AI Assistant</h3>
                 <AIAssistant />
               </div>
+              <div className="bg-white p-4 rounded shadow text-sm text-gray-600">
+                <h4 className="font-semibold">How booking works</h4>
+                <ul className="list-disc ml-5 mt-2">
+                  <li>Select a service and click <em>Book Now</em>.</li>
+                  <li>Choose date & time, provide contact details and payment info.</li>
+                  <li>Receipt appears after confirmation — download for records.</li>
+                </ul>
+              </div>
             </aside>
           </main>
 
-          {selectedProduct && <ServiceModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />}
+          {/* booking modal */}
+          {selectedService && (
+            <BookingModal
+              service={selectedService}
+              onClose={() => setSelectedService(null)}
+              onConfirm={(booking) => {
+                // add booking in-memory and show confirmation/receipt
+                setBookings(prev => [...prev, booking]);
+                setCurrentBooking(booking);
+                setShowReceipt(booking);
+                setSelectedService(null);
+                setView('booking-confirm');
+              }}
+            />
+          )}
+
+          {showReceipt && <BookingReceiptModal booking={showReceipt} onClose={() => setShowReceipt(null)} />}
         </div>
       );
     }
 
-    function CartButton({ cart }) {
-      const count = Object.values(cart).reduce((s, p) => s + p.qty, 0);
-      return <button className="relative">🛒<span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1">{count}</span></button>;
+    /* ===========================
+       Small UI: placeholder where Cart was
+       =========================== */
+    function CartButtonPlaceholder() {
+      // keep layout unchanged: show a small cart icon area (not used in booking platform)
+      return <button className="relative">🛒</button>;
     }
 
-    function Shop({ products, onAdd, onViewDetails }) {
+    /* ===========================
+       ServiceList (cards with Book Now)
+       =========================== */
+    function ServiceList({ services, onBook }) {
       return (
         <div>
-          <h2 className="text-2xl font-semibold mb-4">Services</h2>
+          <h2 className="text-2xl font-semibold mb-4">Services & Consultations</h2>
           <div className="grid md:grid-cols-2 gap-4">
-            {products.map((p) => (
-              <div key={p.id} className="bg-white p-4 rounded shadow">
-                <img src={p.image} alt={p.title} className="rounded mb-3 h-40 w-full object-cover" />
-                <h3 className="font-semibold">{p.title}</h3>
-                <p className="text-sm text-gray-600">{p.description}</p>
-                <div className="mt-3 flex justify-between">
-                  <span className="font-bold">₱{p.price.toLocaleString()}</span>
+            {services.map(s => (
+              <div key={s.id} className="bg-white p-4 rounded shadow">
+                <img src={s.image} alt={s.title} className="rounded mb-3 h-40 w-full object-cover" />
+                <h3 className="font-semibold">{s.title}</h3>
+                <p className="text-sm text-gray-600">{s.description}</p>
+                <div className="mt-3 flex justify-between items-center">
+                  <span className="font-bold">₱{s.price.toLocaleString()}</span>
                   <div className="flex gap-2">
-                    <button onClick={() => onViewDetails(p)} className="border border-blue-600 text-blue-600 px-3 py-1 rounded">Details</button>
-                    <button onClick={() => onAdd(p)} className="bg-blue-600 text-white px-3 py-1 rounded">Add</button>
+                    <button onClick={() => onBook(s)} className="bg-green-600 text-white px-3 py-1 rounded">Book Now</button>
+                    <button onClick={() => window.alert(s.details)} className="border border-blue-600 text-blue-600 px-3 py-1 rounded">Details</button>
                   </div>
                 </div>
               </div>
@@ -110,176 +175,325 @@
       );
     }
 
-    function ServiceModal({ product, onClose }) {
-      return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded shadow-lg w-11/12 md:w-1/2">
-            <img src={product.image} alt={product.title} className="rounded mb-4 w-full h-56 object-cover" />
-            <h2 className="text-2xl font-semibold mb-2">{product.title}</h2>
-            <p className="text-gray-700 mb-4">{product.details}</p>
-            <p className="font-bold mb-4">Price: ₱{product.price.toLocaleString()}</p>
-            <button onClick={onClose} className="bg-blue-600 text-white px-4 py-2 rounded">Close</button>
-          </div>
-        </div>
-      );
-    }
-
-    function CartPage({ cart, subtotal, remove, updateQty, setView }) {
-      const items = Object.values(cart);
-      return (
-        <div className="bg-white p-6 rounded shadow">
-          <h2 className="text-2xl font-semibold mb-4">Your Cart</h2>
-          {items.length === 0 ? (
-            <p className="text-gray-600">Your cart is empty.</p>
-          ) : (
-            <>
-              <ul className="space-y-3">
-                {items.map((it) => (
-                  <li key={it.id} className="flex justify-between items-center">
-                    <div>
-                      <p className="font-medium">{it.title}</p>
-                      <p className="text-sm text-gray-500">₱{it.price.toLocaleString()}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <input type="number" min="1" value={it.qty} onChange={(e) => updateQty(it.id, Number(e.target.value))} className="w-16 border rounded px-2 py-1 text-sm" />
-                      <button onClick={() => remove(it.id)} className="text-red-500 text-sm">Remove</button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-4 flex justify-between border-t pt-3">
-                <span className="font-semibold">Subtotal: ₱{subtotal.toLocaleString()}</span>
-                <button onClick={() => setView('checkout')} className="bg-green-600 text-white px-4 py-2 rounded">Proceed to Checkout</button>
-              </div>
-            </>
-          )}
-        </div>
-      );
-    }
-
-    function Checkout({ cart, subtotal, onPlaceOrder }) {
+    /* ===========================
+       BookingModal: book a service
+       - date + time slot
+       - contact details
+       - payment method + digit validation (silent truncation)
+       =========================== */
+    function BookingModal({ service, onClose, onConfirm }) {
       const [name, setName] = React.useState('');
       const [email, setEmail] = React.useState('');
-      const [pm, setPm] = React.useState('cod');
+      const [date, setDate] = React.useState(''); // yyyy-mm-dd
+      const [time, setTime] = React.useState('09:00');
+      const [pm, setPm] = React.useState('cod'); // cod | bank | gcash
       const [bank, setBank] = React.useState('');
       const [account, setAccount] = React.useState('');
-      const [note, setNote] = React.useState('');
+      const [gcash, setGcash] = React.useState('');
       const [showConfirm, setShowConfirm] = React.useState(false);
 
-      const handleSubmit = (e) => {
+      // define time slots
+      const timeSlots = ['09:00', '11:00', '13:00', '15:00', '17:00'];
+
+      // digit input handler: only digits & truncate to limit
+      const handleDigitInput = (value, limit, setter) => {
+        const digits = value.replace(/\D/g, '');
+        setter(digits.slice(0, limit));
+      };
+
+      const bankLimit = () => {
+        if (bank === 'BPI') return 10;
+        if (bank === 'BDO') return 12;
+        if (bank === 'Metrobank') return 13;
+        return 0;
+      };
+
+      const placeBooking = (e) => {
         e.preventDefault();
+        // simple validation: require name/email/date/time
+        if (!name || !email || !date || !time) {
+          alert('Please fill name, email, date and time.');
+          return;
+        }
+        // payment-specific minimal validation
+        if (pm === 'bank' && (!bank || account.length < 1)) {
+          alert('Please select a bank and enter account number.');
+          return;
+        }
+        if (pm === 'gcash' && gcash.length < 1) {
+          alert('Please enter GCash number.');
+          return;
+        }
         setShowConfirm(true);
       };
 
-      const confirmPayment = () => {
+      const confirmBooking = () => {
         setShowConfirm(false);
-        onPlaceOrder({ name, email, paymentMethod: pm, paymentNote: note, bank, account });
+        const id = genBookingId();
+        const booking = {
+          id,
+          serviceId: service.id,
+          serviceTitle: service.title,
+          name,
+          email,
+          bookingDate: new Date().toLocaleString(),
+          serviceDate: new Date(date + 'T' + time).toLocaleString(),
+          dateIso: date,
+          time,
+          paymentMethod: pm,
+          bank: pm === 'bank' ? bank : '',
+          account: pm === 'bank' ? account : '',
+          gcash: pm === 'gcash' ? gcash : '',
+          price: service.price
+        };
+        onConfirm(booking);
       };
 
       return (
-        <>
-          <form onSubmit={handleSubmit} className="bg-white p-6 rounded shadow space-y-3">
-            <h2 className="text-xl font-semibold">Checkout</h2>
-            <input placeholder="Full name" value={name} onChange={(e) => setName(e.target.value)} className="w-full border rounded px-3 py-2" required />
-            <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border rounded px-3 py-2" required />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded shadow-lg w-11/12 md:w-1/2 max-h-[90vh] overflow-auto">
+            <h2 className="text-2xl font-semibold mb-2">Book: {service.title}</h2>
+            <p className="text-gray-600 mb-4">{service.details}</p>
 
-            <div>
-              <label className="block text-sm">Payment method</label>
-              <select value={pm} onChange={(e) => setPm(e.target.value)} className="border rounded px-3 py-2 w-full">
-                <option value="cod">Cash on Delivery (COD)</option>
-                <option value="bank">Bank Transfer</option>
-                <option value="gcash">GCash</option>
-              </select>
+            <form onSubmit={placeBooking} className="space-y-3">
+              <div>
+                <label className="block text-sm">Full name</label>
+                <input value={name} onChange={e => setName(e.target.value)} className="w-full border rounded px-3 py-2" required />
+              </div>
+
+              <div>
+                <label className="block text-sm">Email</label>
+                <input value={email} onChange={e => setEmail(e.target.value)} type="email" className="w-full border rounded px-3 py-2" required />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm">Preferred Date</label>
+                  <input value={date} onChange={e => setDate(e.target.value)} type="date" className="w-full border rounded px-3 py-2" required />
+                </div>
+                <div>
+                  <label className="block text-sm">Preferred Time</label>
+                  <select value={time} onChange={e => setTime(e.target.value)} className="w-full border rounded px-3 py-2">
+                    {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm">Payment method</label>
+                <select value={pm} onChange={e => setPm(e.target.value)} className="w-full border rounded px-3 py-2">
+                  <option value="cod">Cash on Service (COD)</option>
+                  <option value="bank">Bank Transfer</option>
+                  <option value="gcash">GCash</option>
+                </select>
+              </div>
 
               {pm === 'bank' && (
-                <div className="mt-2 space-y-2">
-                  <select value={bank} onChange={(e) => setBank(e.target.value)} className="border rounded px-3 py-2 w-full" required>
+                <div className="space-y-2">
+                  <select value={bank} onChange={e => { setBank(e.target.value); setAccount(''); }} className="w-full border rounded px-3 py-2" required>
                     <option value="">Select Bank</option>
                     <option value="Metrobank">Metrobank</option>
                     <option value="BDO">BDO</option>
                     <option value="BPI">BPI</option>
                   </select>
-                  <input placeholder="Account Number" value={account} onChange={(e) => setAccount(e.target.value)} className="w-full border rounded px-3 py-2" required />
+                  <input placeholder="Account Number"
+                    value={account}
+                    onChange={e => handleDigitInput(e.target.value, bankLimit(), setAccount)}
+                    inputMode="numeric"
+                    className="w-full border rounded px-3 py-2"
+                    required
+                  />
+                  <p className="text-xs text-gray-500">Account number limited to {bank ? bankLimit() : 'N/A'} digits.</p>
                 </div>
               )}
 
               {pm === 'gcash' && (
-                <input placeholder="GCash number or reference" value={note} onChange={(e) => setNote(e.target.value)} className="w-full border rounded px-3 py-2 mt-2" required />
+                <div>
+                  <input placeholder="GCash Number (11 digits)" value={gcash} onChange={e => handleDigitInput(e.target.value, 11, setGcash)} inputMode="numeric" className="w-full border rounded px-3 py-2" required />
+                  <p className="text-xs text-gray-500">Only digits — up to 11 allowed.</p>
+                </div>
               )}
-            </div>
 
-            <div className="flex justify-between border-t pt-3">
-              <span>Total: ₱{subtotal.toLocaleString()}</span>
-              <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded">Place Order</button>
-            </div>
-          </form>
-
-          {showConfirm && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-              <div className="bg-white p-6 rounded shadow-lg w-11/12 md:w-1/3 text-center">
-                <h3 className="text-xl font-semibold mb-4">Confirm Payment</h3>
-                <p className="text-gray-700 mb-4">Are you sure you want to confirm this payment and place the order?</p>
-                <div className="flex justify-center gap-4">
-                  <button onClick={() => setShowConfirm(false)} className="bg-gray-400 text-white px-4 py-2 rounded">Cancel</button>
-                  <button onClick={confirmPayment} className="bg-green-600 text-white px-4 py-2 rounded">Confirm</button>
+              <div className="flex justify-between items-center border-t pt-3">
+                <div>
+                  <div className="text-sm text-gray-600">Price</div>
+                  <div className="font-semibold">₱{service.price.toLocaleString()}</div>
+                </div>
+                <div className="flex gap-2">
+                  <button type="button" onClick={onClose} className="bg-gray-400 text-white px-4 py-2 rounded">Cancel</button>
+                  <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded">Confirm Booking</button>
                 </div>
               </div>
-            </div>
-          )}
-        </>
+            </form>
+
+            {showConfirm && (
+              <div className="fixed inset-0 top-0 left-0 flex justify-center items-center z-60">
+                <div className="bg-white p-6 rounded shadow-lg w-11/12 md:w-1/3 text-center">
+                  <h3 className="text-xl font-semibold mb-2">Confirm Booking</h3>
+                  <p className="text-gray-700 mb-4">Place the booking for <strong>{service.title}</strong> on <strong>{date}</strong> at <strong>{time}</strong>?</p>
+                  <div className="flex justify-center gap-3">
+                    <button onClick={() => setShowConfirm(false)} className="bg-gray-400 text-white px-4 py-2 rounded">Back</button>
+                    <button onClick={confirmBooking} className="bg-green-600 text-white px-4 py-2 rounded">Yes — Book</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       );
     }
 
-    function OrderConfirm({ order, onCancel }) {
+    /* ===========================
+       BookingReceiptModal (after confirming)
+       =========================== */
+    function BookingReceiptModal({ booking, onClose }) {
+      const downloadReceipt = () => {
+        const content =
+`SafeBuild Engineering Solutions
+Booking Receipt
+-------------------------
+Booking ID: ${booking.id}
+Service: ${booking.serviceTitle}
+Name: ${booking.name}
+Email: ${booking.email}
+Booking Date: ${booking.bookingDate}
+Service Date & Time: ${booking.serviceDate}
+Payment: ${booking.paymentMethod}
+Bank: ${booking.bank || '-'}
+Account/GCash: ${booking.account || booking.gcash || '-'}
+Price: ₱${booking.price.toLocaleString()}
+`;
+        const blob = new Blob([content], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Booking-${booking.id}.txt`;
+        a.click();
+        URL.revokeObjectURL(url);
+      };
+
+      return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white p-6 rounded shadow-lg w-11/12 md:w-1/2 text-center">
+            <h2 className="text-2xl font-semibold mb-2">Booking Confirmed</h2>
+            <p><strong>Booking ID:</strong> {booking.id}</p>
+            <p><strong>Service:</strong> {booking.serviceTitle}</p>
+            <p><strong>Name:</strong> {booking.name}</p>
+            <p><strong>Service Date & Time:</strong> {booking.serviceDate}</p>
+            <p className="mt-2"><strong>Price:</strong> ₱{booking.price.toLocaleString()}</p>
+            <div className="mt-4 flex justify-center gap-3">
+              <button onClick={downloadReceipt} className="bg-blue-600 text-white px-4 py-2 rounded">Download Receipt</button>
+              <button onClick={onClose} className="bg-gray-400 text-white px-4 py-2 rounded">Close</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ===========================
+       BookingConfirm page (after booking)
+       =========================== */
+    function BookingConfirm({ booking, onCancel }) {
       const [cancelled, setCancelled] = React.useState(false);
+      const doCancel = () => {
+        setCancelled(true);
+        // This demo keeps bookings in-memory; mark cancelled visually (owner can clear or ignore)
+        // We'll notify parent (App) via onCancel to allow it to clear currentBooking
+        onCancel(booking.id);
+      };
       return (
         <div className="bg-white p-6 rounded shadow">
           {!cancelled ? (
             <>
-              <h2 className="text-2xl font-semibold">Order Confirmed</h2>
-              <p className="mt-2">Order ID: <strong>{order.id}</strong></p>
-              <p>Payment: {order.paymentMethod.toUpperCase()}</p>
-              {order.bank && <p>Bank: {order.bank}</p>}
-              {order.account && <p>Account Number: {order.account}</p>}
-              <button onClick={() => { setCancelled(true); onCancel(); }} className="mt-4 bg-red-600 text-white px-4 py-2 rounded">Cancel Order</button>
+              <h2 className="text-2xl font-semibold">Booking Confirmed</h2>
+              <p className="mt-2">Booking ID: <strong>{booking.id}</strong></p>
+              <p>Service: <strong>{booking.serviceTitle}</strong></p>
+              <p>Service Date: {booking.serviceDate}</p>
+              <button onClick={doCancel} className="mt-4 bg-red-600 text-white px-4 py-2 rounded">Cancel Booking</button>
             </>
           ) : (
-            <p className="text-red-600 font-semibold">Your order has been cancelled.</p>
+            <p className="text-red-600 font-semibold">Your booking has been cancelled.</p>
           )}
         </div>
       );
     }
 
+    /* ===========================
+       BookingHistory (My Appointments)
+       =========================== */
+    function BookingHistory({ bookings }) {
+      return (
+        <div className="bg-white p-6 rounded shadow">
+          <h2 className="text-2xl font-semibold mb-4">My Appointments</h2>
+          {bookings.length === 0 ? (
+            <p className="text-gray-600">No appointments yet.</p>
+          ) : (
+            <div className="overflow-auto">
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="p-2 border">Booking ID</th>
+                    <th className="p-2 border">Service</th>
+                    <th className="p-2 border">Booking Date</th>
+                    <th className="p-2 border">Service Date & Time</th>
+                    <th className="p-2 border">Payment</th>
+                    <th className="p-2 border">Price</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bookings.map(b => (
+                    <tr key={b.id} className="odd:bg-white even:bg-gray-50">
+                      <td className="p-2 border">{b.id}</td>
+                      <td className="p-2 border">{b.serviceTitle}</td>
+                      <td className="p-2 border">{b.bookingDate}</td>
+                      <td className="p-2 border">{b.serviceDate}</td>
+                      <td className="p-2 border">{b.paymentMethod.toUpperCase()}</td>
+                      <td className="p-2 border">₱{b.price.toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    /* ===========================
+       Simple AI Assistant (booking-focused)
+       =========================== */
     function AIAssistant() {
-      const [messages, setMessages] = React.useState([{ from: 'assistant', text: "Hello! I'm SafeBot. Ask me about services, pricing, or order tracking!" }]);
+      const [messages, setMessages] = React.useState([{ from: 'assistant', text: "Hi — I'm SafeBot. I can help you book services. Try: 'Book assessment', 'Available time slots', or 'How to pay'." }]);
       const [input, setInput] = React.useState('');
 
       const send = (e) => {
         e.preventDefault();
         if (!input.trim()) return;
-        const msg = input.toLowerCase();
-        let response = '';
-        if (msg.includes('service')) response = 'We offer: Structural Assessment, Retrofitting Design, Implementation, and Training. Click service details for full info.';
-        else if (msg.includes('price')) response = 'Prices range from ₱7,000 for training to ₱150,000 for implementation packages.';
-        else if (msg.includes('track') || msg.includes('order')) response = 'Please provide your order ID (e.g. SB-12345) to check status.';
-        else response = "I can help with questions about services, payment methods, or tracking.";
-        setMessages([...messages, { from: 'user', text: input }, { from: 'assistant', text: response }]);
+        const txt = input.toLowerCase();
+        let reply = "I can help with booking, scheduling, and payment questions. Try: 'Book assessment', 'Available slots', or 'What are payment options?'.";
+        if (txt.includes('book') || txt.includes('booking')) reply = "To book, click 'Book Now' on a service, then choose date/time and confirm.";
+        else if (txt.includes('slots') || txt.includes('time')) reply = "Typical slots: 09:00, 11:00, 13:00, 15:00, 17:00. Choose one during booking.";
+        else if (txt.includes('pay') || txt.includes('payment')) reply = "We accept COD, Bank Transfer (Metrobank/BDO/BPI), and GCash. Bank/GCash fields enforce digit limits during booking.";
+        setMessages(prev => [...prev, { from: 'user', text: input }, { from: 'assistant', text: reply }]);
         setInput('');
       };
 
       return (
         <div className="flex flex-col h-80">
           <div className="flex-1 overflow-auto space-y-2 bg-gray-50 p-2 rounded">
-            {messages.map((m, i) => <div key={i} className={m.from === 'assistant' ? 'bg-white p-2 rounded shadow text-sm' : 'text-right text-sm text-blue-700'}>{m.text}</div>)}
+            {messages.map((m,i) => <div key={i} className={m.from === 'assistant' ? 'bg-white p-2 rounded shadow text-sm' : 'text-right text-sm text-blue-700'}>{m.text}</div>)}
           </div>
           <form onSubmit={send} className="mt-2 flex gap-2">
-            <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Ask SafeBot..." className="flex-1 border rounded px-3 py-2 text-sm" />
+            <input value={input} onChange={e => setInput(e.target.value)} placeholder="Ask SafeBot..." className="flex-1 border rounded px-3 py-2 text-sm" />
             <button className="bg-blue-600 text-white px-3 py-2 rounded text-sm">Send</button>
           </form>
         </div>
       );
     }
 
+    /* ===========================
+       Render App
+       =========================== */
     ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   </script>
 </body>
