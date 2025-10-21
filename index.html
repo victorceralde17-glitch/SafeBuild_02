@@ -13,61 +13,28 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    /* ===========================
-       Product / Service data
-       (uses local images in images/*.jpg)
-       =========================== */
     const SERVICES = [
-      {
-        id: 'svc-assess',
-        title: 'Structural Assessment & Audit',
-        image: 'images/assessment.jpg',
-        description: 'Comprehensive building evaluation and testing.',
-        details: 'Includes structural inspection, material testing, and detailed analysis report. We use advanced equipment such as rebound hammers and ultrasonic testers to detect internal weaknesses.',
-        price: 15000
-      },
-      {
-        id: 'svc-design',
-        title: 'Retrofitting Design & Simulation',
-        image: 'images/design.jpg',
-        description: 'Simulation and redesigning of weak structures.',
-        details: 'ETABS/STAAD/SAP2000 modelling, seismic simulation, retrofit drawings and cost estimates. Ensures local code compliance.',
-        price: 35000
-      },
-      {
-        id: 'svc-impl',
-        title: 'Implementation & Retrofitting',
-        image: 'images/implementation.jpg',
-        description: 'On-site implementation of retrofit plans.',
-        details: 'On-site structural reinforcement using FRP, steel jacketing and concrete overlays. Supervised by certified engineers.',
-        price: 150000
-      },
-      {
-        id: 'svc-training',
-        title: 'Consultation & Training Session',
-        image: 'images/training.jpg',
-        description: 'Workshops and training for disaster resilience.',
-        details: 'Customized training programs for LGUs, schools, and private institutions. Participants receive completion certificates.',
-        price: 7000
-      }
+      { id: 'svc-assess', title: 'Structural Assessment & Audit', image: 'images/assessment.jpg', description: 'Comprehensive building evaluation and testing.', details: 'Includes structural inspection, material testing, and detailed analysis report.', price: 15000 },
+      { id: 'svc-design', title: 'Retrofitting Design & Simulation', image: 'images/design.jpg', description: 'Simulation and redesigning of weak structures.', details: 'We model and simulate structural improvements to ensure code compliance.', price: 35000 },
+      { id: 'svc-impl', title: 'Implementation & Retrofitting', image: 'images/implementation.jpg', description: 'Actual implementation of retrofitting plans.', details: 'On-site structural reinforcement and rehabilitation works by certified engineers.', price: 150000 },
+      { id: 'svc-training', title: 'Consultation & Training Session', image: 'images/training.jpg', description: 'Workshops and training for disaster resilience.', details: 'Customized training programs covering preparedness, assessment, and retrofitting methods.', price: 7000 }
     ];
 
-    /* ===========================
-       Utility: generate booking id
-       =========================== */
     function genBookingId() {
       return 'BK-' + Date.now();
     }
 
-    /* ===========================
-       Root App
-       =========================== */
     function App() {
-      const [view, setView] = React.useState('services'); // services | bookings | booking-confirm
+      const [view, setView] = React.useState('services');
       const [selectedService, setSelectedService] = React.useState(null);
-      const [bookings, setBookings] = React.useState([]); // in-memory
-      const [currentBooking, setCurrentBooking] = React.useState(null); // after confirm -> show details
+      const [bookings, setBookings] = React.useState([]);
+      const [currentBooking, setCurrentBooking] = React.useState(null);
       const [showReceipt, setShowReceipt] = React.useState(null);
+
+      const cancelBooking = (id) => {
+        setBookings(prev => prev.map(b => b.id === id ? { ...b, status: 'Cancelled' } : b));
+        if (currentBooking?.id === id) setCurrentBooking({ ...currentBooking, status: 'Cancelled' });
+      };
 
       return (
         <div className="min-h-screen">
@@ -80,26 +47,17 @@
               <nav className="flex items-center gap-4">
                 <button onClick={() => setView('services')} className="text-sm">Services</button>
                 <button onClick={() => setView('bookings')} className="text-sm">My Appointments</button>
-                <CartButtonPlaceholder />
+                <span>🤖</span>
               </nav>
             </div>
           </header>
 
           <main className="max-w-6xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
             <section className="lg:col-span-2">
-              {view === 'services' && (
-                <ServiceList
-                  services={SERVICES}
-                  onBook={(s) => { setSelectedService(s); }}
-                />
-              )}
-
-              {view === 'bookings' && (
-                <BookingHistory bookings={bookings} />
-              )}
-
+              {view === 'services' && <ServiceList services={SERVICES} onBook={setSelectedService} />}
+              {view === 'bookings' && <BookingHistory bookings={bookings} />}
               {view === 'booking-confirm' && currentBooking && (
-                <BookingConfirm booking={currentBooking} onCancel={() => setCurrentBooking(null)} />
+                <BookingConfirm booking={currentBooking} onCancel={cancelBooking} />
               )}
             </section>
 
@@ -108,49 +66,29 @@
                 <h3 className="font-semibold">AI Assistant</h3>
                 <AIAssistant />
               </div>
-              <div className="bg-white p-4 rounded shadow text-sm text-gray-600">
-                <h4 className="font-semibold">How booking works</h4>
-                <ul className="list-disc ml-5 mt-2">
-                  <li>Select a service and click <em>Book Now</em>.</li>
-                  <li>Choose date & time, provide contact details and payment info.</li>
-                  <li>Receipt appears after confirmation — download for records.</li>
-                </ul>
-              </div>
             </aside>
           </main>
 
-          {/* booking modal */}
           {selectedService && (
             <BookingModal
               service={selectedService}
               onClose={() => setSelectedService(null)}
-              onConfirm={(booking) => {
-                // add booking in-memory and show confirmation/receipt
-                setBookings(prev => [...prev, booking]);
-                setCurrentBooking(booking);
-                setShowReceipt(booking);
+              onConfirm={(b) => {
+                setBookings(p => [...p, b]);
+                setCurrentBooking(b);
+                setShowReceipt(b);
                 setSelectedService(null);
                 setView('booking-confirm');
               }}
             />
           )}
-
-          {showReceipt && <BookingReceiptModal booking={showReceipt} onClose={() => setShowReceipt(null)} />}
+          {showReceipt && showReceipt.status !== 'Cancelled' && (
+            <BookingReceiptModal booking={showReceipt} onClose={() => setShowReceipt(null)} />
+          )}
         </div>
       );
     }
 
-    /* ===========================
-       Small UI: placeholder where Cart was
-       =========================== */
-    function CartButtonPlaceholder() {
-      // keep layout unchanged: show a small cart icon area (not used in booking platform)
-      return <button className="relative">🛒</button>;
-    }
-
-    /* ===========================
-       ServiceList (cards with Book Now)
-       =========================== */
     function ServiceList({ services, onBook }) {
       return (
         <div>
@@ -163,10 +101,7 @@
                 <p className="text-sm text-gray-600">{s.description}</p>
                 <div className="mt-3 flex justify-between items-center">
                   <span className="font-bold">₱{s.price.toLocaleString()}</span>
-                  <div className="flex gap-2">
-                    <button onClick={() => onBook(s)} className="bg-green-600 text-white px-3 py-1 rounded">Book Now</button>
-                    <button onClick={() => window.alert(s.details)} className="border border-blue-600 text-blue-600 px-3 py-1 rounded">Details</button>
-                  </div>
+                  <button onClick={() => onBook(s)} className="bg-green-600 text-white px-3 py-1 rounded">Book Now</button>
                 </div>
               </div>
             ))}
@@ -175,165 +110,86 @@
       );
     }
 
-    /* ===========================
-       BookingModal: book a service
-       - date + time slot
-       - contact details
-       - payment method + digit validation (silent truncation)
-       =========================== */
     function BookingModal({ service, onClose, onConfirm }) {
       const [name, setName] = React.useState('');
       const [email, setEmail] = React.useState('');
-      const [date, setDate] = React.useState(''); // yyyy-mm-dd
+      const [address, setAddress] = React.useState('');
+      const [contact, setContact] = React.useState('');
+      const [date, setDate] = React.useState('');
       const [time, setTime] = React.useState('09:00');
-      const [pm, setPm] = React.useState('cod'); // cod | bank | gcash
+      const [pm, setPm] = React.useState('cod');
       const [bank, setBank] = React.useState('');
       const [account, setAccount] = React.useState('');
       const [gcash, setGcash] = React.useState('');
       const [showConfirm, setShowConfirm] = React.useState(false);
 
-      // define time slots
-      const timeSlots = ['09:00', '11:00', '13:00', '15:00', '17:00'];
-
-      // digit input handler: only digits & truncate to limit
-      const handleDigitInput = (value, limit, setter) => {
-        const digits = value.replace(/\D/g, '');
-        setter(digits.slice(0, limit));
-      };
-
-      const bankLimit = () => {
-        if (bank === 'BPI') return 10;
-        if (bank === 'BDO') return 12;
-        if (bank === 'Metrobank') return 13;
-        return 0;
-      };
-
-      const placeBooking = (e) => {
-        e.preventDefault();
-        // simple validation: require name/email/date/time
-        if (!name || !email || !date || !time) {
-          alert('Please fill name, email, date and time.');
-          return;
-        }
-        // payment-specific minimal validation
-        if (pm === 'bank' && (!bank || account.length < 1)) {
-          alert('Please select a bank and enter account number.');
-          return;
-        }
-        if (pm === 'gcash' && gcash.length < 1) {
-          alert('Please enter GCash number.');
-          return;
-        }
-        setShowConfirm(true);
-      };
+      const handleDigitInput = (val, limit, setter) => setter(val.replace(/\D/g, '').slice(0, limit));
+      const bankLimit = () => bank === 'BPI' ? 10 : bank === 'BDO' ? 12 : bank === 'Metrobank' ? 13 : 0;
 
       const confirmBooking = () => {
-        setShowConfirm(false);
         const id = genBookingId();
         const booking = {
-          id,
-          serviceId: service.id,
-          serviceTitle: service.title,
-          name,
-          email,
+          id, serviceTitle: service.title, name, email, address, contact,
           bookingDate: new Date().toLocaleString(),
           serviceDate: new Date(date + 'T' + time).toLocaleString(),
-          dateIso: date,
-          time,
-          paymentMethod: pm,
-          bank: pm === 'bank' ? bank : '',
-          account: pm === 'bank' ? account : '',
-          gcash: pm === 'gcash' ? gcash : '',
-          price: service.price
+          paymentMethod: pm, bank, account, gcash, price: service.price, status: 'Confirmed'
         };
         onConfirm(booking);
       };
+
+      const timeSlots = ['09:00', '11:00', '13:00', '15:00', '17:00'];
 
       return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white p-6 rounded shadow-lg w-11/12 md:w-1/2 max-h-[90vh] overflow-auto">
             <h2 className="text-2xl font-semibold mb-2">Book: {service.title}</h2>
             <p className="text-gray-600 mb-4">{service.details}</p>
-
-            <form onSubmit={placeBooking} className="space-y-3">
-              <div>
-                <label className="block text-sm">Full name</label>
-                <input value={name} onChange={e => setName(e.target.value)} className="w-full border rounded px-3 py-2" required />
-              </div>
-
-              <div>
-                <label className="block text-sm">Email</label>
-                <input value={email} onChange={e => setEmail(e.target.value)} type="email" className="w-full border rounded px-3 py-2" required />
-              </div>
-
+            <form onSubmit={e => { e.preventDefault(); setShowConfirm(true); }} className="space-y-3">
+              <input placeholder="Full Name" value={name} onChange={e => setName(e.target.value)} className="w-full border rounded px-3 py-2" required />
+              <input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border rounded px-3 py-2" required />
+              <input placeholder="Address" value={address} onChange={e => setAddress(e.target.value)} className="w-full border rounded px-3 py-2" required />
+              <input placeholder="Contact Number (11 digits)" value={contact} onChange={e => handleDigitInput(e.target.value, 11, setContact)} inputMode="numeric" className="w-full border rounded px-3 py-2" required />
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm">Preferred Date</label>
-                  <input value={date} onChange={e => setDate(e.target.value)} type="date" className="w-full border rounded px-3 py-2" required />
-                </div>
-                <div>
-                  <label className="block text-sm">Preferred Time</label>
-                  <select value={time} onChange={e => setTime(e.target.value)} className="w-full border rounded px-3 py-2">
-                    {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm">Payment method</label>
-                <select value={pm} onChange={e => setPm(e.target.value)} className="w-full border rounded px-3 py-2">
-                  <option value="cod">Cash on Service (COD)</option>
-                  <option value="bank">Bank Transfer</option>
-                  <option value="gcash">GCash</option>
+                <input type="date" value={date} onChange={e => setDate(e.target.value)} className="border rounded px-3 py-2" required />
+                <select value={time} onChange={e => setTime(e.target.value)} className="border rounded px-3 py-2">
+                  {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
-
+              <select value={pm} onChange={e => setPm(e.target.value)} className="w-full border rounded px-3 py-2">
+                <option value="cod">Cash on Service (COD)</option>
+                <option value="bank">Bank Transfer</option>
+                <option value="gcash">GCash</option>
+              </select>
               {pm === 'bank' && (
                 <div className="space-y-2">
-                  <select value={bank} onChange={e => { setBank(e.target.value); setAccount(''); }} className="w-full border rounded px-3 py-2" required>
+                  <select value={bank} onChange={e => setBank(e.target.value)} className="w-full border rounded px-3 py-2" required>
                     <option value="">Select Bank</option>
                     <option value="Metrobank">Metrobank</option>
                     <option value="BDO">BDO</option>
                     <option value="BPI">BPI</option>
                   </select>
-                  <input placeholder="Account Number"
-                    value={account}
-                    onChange={e => handleDigitInput(e.target.value, bankLimit(), setAccount)}
-                    inputMode="numeric"
-                    className="w-full border rounded px-3 py-2"
-                    required
-                  />
-                  <p className="text-xs text-gray-500">Account number limited to {bank ? bankLimit() : 'N/A'} digits.</p>
+                  <input placeholder="Account Number" value={account} onChange={e => handleDigitInput(e.target.value, bankLimit(), setAccount)} inputMode="numeric" className="w-full border rounded px-3 py-2" required />
                 </div>
               )}
-
               {pm === 'gcash' && (
-                <div>
-                  <input placeholder="GCash Number (11 digits)" value={gcash} onChange={e => handleDigitInput(e.target.value, 11, setGcash)} inputMode="numeric" className="w-full border rounded px-3 py-2" required />
-                  <p className="text-xs text-gray-500">Only digits — up to 11 allowed.</p>
-                </div>
+                <input placeholder="GCash Number (11 digits)" value={gcash} onChange={e => handleDigitInput(e.target.value, 11, setGcash)} inputMode="numeric" className="w-full border rounded px-3 py-2" required />
               )}
-
-              <div className="flex justify-between items-center border-t pt-3">
-                <div>
-                  <div className="text-sm text-gray-600">Price</div>
-                  <div className="font-semibold">₱{service.price.toLocaleString()}</div>
-                </div>
+              <div className="flex justify-between border-t pt-3">
+                <span>Total: ₱{service.price.toLocaleString()}</span>
                 <div className="flex gap-2">
                   <button type="button" onClick={onClose} className="bg-gray-400 text-white px-4 py-2 rounded">Cancel</button>
-                  <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded">Confirm Booking</button>
+                  <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded">Book</button>
                 </div>
               </div>
             </form>
-
             {showConfirm && (
-              <div className="fixed inset-0 top-0 left-0 flex justify-center items-center z-60">
-                <div className="bg-white p-6 rounded shadow-lg w-11/12 md:w-1/3 text-center">
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-60">
+                <div className="bg-white p-6 rounded shadow-lg text-center">
                   <h3 className="text-xl font-semibold mb-2">Confirm Booking</h3>
-                  <p className="text-gray-700 mb-4">Place the booking for <strong>{service.title}</strong> on <strong>{date}</strong> at <strong>{time}</strong>?</p>
-                  <div className="flex justify-center gap-3">
+                  <p>Confirm your booking for <strong>{service.title}</strong>?</p>
+                  <div className="mt-4 flex justify-center gap-3">
                     <button onClick={() => setShowConfirm(false)} className="bg-gray-400 text-white px-4 py-2 rounded">Back</button>
-                    <button onClick={confirmBooking} className="bg-green-600 text-white px-4 py-2 rounded">Yes — Book</button>
+                    <button onClick={confirmBooking} className="bg-green-600 text-white px-4 py-2 rounded">Confirm</button>
                   </div>
                 </div>
               </div>
@@ -343,46 +199,38 @@
       );
     }
 
-    /* ===========================
-       BookingReceiptModal (after confirming)
-       =========================== */
     function BookingReceiptModal({ booking, onClose }) {
+      if (booking.status === 'Cancelled') return null;
       const downloadReceipt = () => {
-        const content =
-`SafeBuild Engineering Solutions
-Booking Receipt
+        const content = `SafeBuild Booking Receipt
 -------------------------
 Booking ID: ${booking.id}
 Service: ${booking.serviceTitle}
 Name: ${booking.name}
-Email: ${booking.email}
-Booking Date: ${booking.bookingDate}
-Service Date & Time: ${booking.serviceDate}
+Address: ${booking.address}
+Contact: ${booking.contact}
+Date & Time: ${booking.serviceDate}
 Payment: ${booking.paymentMethod}
-Bank: ${booking.bank || '-'}
-Account/GCash: ${booking.account || booking.gcash || '-'}
-Price: ₱${booking.price.toLocaleString()}
-`;
+Total: ₱${booking.price.toLocaleString()}`;
         const blob = new Blob([content], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Booking-${booking.id}.txt`;
-        a.click();
-        URL.revokeObjectURL(url);
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `Receipt-${booking.id}.txt`;
+        link.click();
       };
-
       return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded shadow-lg w-11/12 md:w-1/2 text-center">
+          <div className="bg-white p-6 rounded shadow-lg text-center">
             <h2 className="text-2xl font-semibold mb-2">Booking Confirmed</h2>
-            <p><strong>Booking ID:</strong> {booking.id}</p>
             <p><strong>Service:</strong> {booking.serviceTitle}</p>
             <p><strong>Name:</strong> {booking.name}</p>
-            <p><strong>Service Date & Time:</strong> {booking.serviceDate}</p>
-            <p className="mt-2"><strong>Price:</strong> ₱{booking.price.toLocaleString()}</p>
+            <p><strong>Address:</strong> {booking.address}</p>
+            <p><strong>Contact:</strong> {booking.contact}</p>
+            <p><strong>Date & Time:</strong> {booking.serviceDate}</p>
+            <p><strong>Payment:</strong> {booking.paymentMethod}</p>
+            <p><strong>Total:</strong> ₱{booking.price.toLocaleString()}</p>
             <div className="mt-4 flex justify-center gap-3">
-              <button onClick={downloadReceipt} className="bg-blue-600 text-white px-4 py-2 rounded">Download Receipt</button>
+              <button onClick={downloadReceipt} className="bg-blue-600 text-white px-4 py-2 rounded">Download</button>
               <button onClick={onClose} className="bg-gray-400 text-white px-4 py-2 rounded">Close</button>
             </div>
           </div>
@@ -390,110 +238,91 @@ Price: ₱${booking.price.toLocaleString()}
       );
     }
 
-    /* ===========================
-       BookingConfirm page (after booking)
-       =========================== */
     function BookingConfirm({ booking, onCancel }) {
-      const [cancelled, setCancelled] = React.useState(false);
-      const doCancel = () => {
-        setCancelled(true);
-        // This demo keeps bookings in-memory; mark cancelled visually (owner can clear or ignore)
-        // We'll notify parent (App) via onCancel to allow it to clear currentBooking
-        onCancel(booking.id);
+      const handleCancel = () => {
+        if (confirm("Are you sure you want to cancel this booking?")) {
+          onCancel(booking.id);
+        }
       };
       return (
         <div className="bg-white p-6 rounded shadow">
-          {!cancelled ? (
-            <>
-              <h2 className="text-2xl font-semibold">Booking Confirmed</h2>
-              <p className="mt-2">Booking ID: <strong>{booking.id}</strong></p>
-              <p>Service: <strong>{booking.serviceTitle}</strong></p>
-              <p>Service Date: {booking.serviceDate}</p>
-              <button onClick={doCancel} className="mt-4 bg-red-600 text-white px-4 py-2 rounded">Cancel Booking</button>
-            </>
-          ) : (
-            <p className="text-red-600 font-semibold">Your booking has been cancelled.</p>
+          <h2 className="text-2xl font-semibold mb-2">Booking Confirmed</h2>
+          <p>Booking ID: <strong>{booking.id}</strong></p>
+          <p>Service: {booking.serviceTitle}</p>
+          <p>Service Date: {booking.serviceDate}</p>
+          <p>Status: {booking.status === 'Cancelled' ? <span className="text-red-600 font-semibold">Cancelled</span> : <span className="text-green-600 font-semibold">Confirmed</span>}</p>
+          {booking.status !== 'Cancelled' && (
+            <button onClick={handleCancel} className="mt-4 bg-red-600 text-white px-4 py-2 rounded">Cancel Booking</button>
           )}
         </div>
       );
     }
 
-    /* ===========================
-       BookingHistory (My Appointments)
-       =========================== */
     function BookingHistory({ bookings }) {
       return (
         <div className="bg-white p-6 rounded shadow">
           <h2 className="text-2xl font-semibold mb-4">My Appointments</h2>
-          {bookings.length === 0 ? (
-            <p className="text-gray-600">No appointments yet.</p>
-          ) : (
-            <div className="overflow-auto">
-              <table className="w-full text-sm border-collapse">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="p-2 border">Booking ID</th>
-                    <th className="p-2 border">Service</th>
-                    <th className="p-2 border">Booking Date</th>
-                    <th className="p-2 border">Service Date & Time</th>
-                    <th className="p-2 border">Payment</th>
-                    <th className="p-2 border">Price</th>
+          {bookings.length === 0 ? <p>No bookings yet.</p> : (
+            <table className="w-full text-sm border">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="p-2 border">Booking ID</th>
+                  <th className="p-2 border">Service</th>
+                  <th className="p-2 border">Address</th>
+                  <th className="p-2 border">Contact</th>
+                  <th className="p-2 border">Date & Time</th>
+                  <th className="p-2 border">Payment</th>
+                  <th className="p-2 border">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bookings.map(b => (
+                  <tr key={b.id}>
+                    <td className="p-2 border">{b.id}</td>
+                    <td className="p-2 border">{b.serviceTitle}</td>
+                    <td className="p-2 border">{b.address}</td>
+                    <td className="p-2 border">{b.contact}</td>
+                    <td className="p-2 border">{b.serviceDate}</td>
+                    <td className="p-2 border">{b.paymentMethod.toUpperCase()}</td>
+                    <td className="p-2 border">
+                      {b.status === 'Cancelled' ? <span className="text-red-600 font-semibold">Cancelled</span> : <span className="text-green-600 font-semibold">Confirmed</span>}
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {bookings.map(b => (
-                    <tr key={b.id} className="odd:bg-white even:bg-gray-50">
-                      <td className="p-2 border">{b.id}</td>
-                      <td className="p-2 border">{b.serviceTitle}</td>
-                      <td className="p-2 border">{b.bookingDate}</td>
-                      <td className="p-2 border">{b.serviceDate}</td>
-                      <td className="p-2 border">{b.paymentMethod.toUpperCase()}</td>
-                      <td className="p-2 border">₱{b.price.toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
       );
     }
 
-    /* ===========================
-       Simple AI Assistant (booking-focused)
-       =========================== */
     function AIAssistant() {
-      const [messages, setMessages] = React.useState([{ from: 'assistant', text: "Hi — I'm SafeBot. I can help you book services. Try: 'Book assessment', 'Available time slots', or 'How to pay'." }]);
+      const [msgs, setMsgs] = React.useState([{ from: 'bot', text: "Hi! I'm SafeBot. Ask me about booking, payment, or services." }]);
       const [input, setInput] = React.useState('');
-
-      const send = (e) => {
+      const send = e => {
         e.preventDefault();
         if (!input.trim()) return;
-        const txt = input.toLowerCase();
-        let reply = "I can help with booking, scheduling, and payment questions. Try: 'Book assessment', 'Available slots', or 'What are payment options?'.";
-        if (txt.includes('book') || txt.includes('booking')) reply = "To book, click 'Book Now' on a service, then choose date/time and confirm.";
-        else if (txt.includes('slots') || txt.includes('time')) reply = "Typical slots: 09:00, 11:00, 13:00, 15:00, 17:00. Choose one during booking.";
-        else if (txt.includes('pay') || txt.includes('payment')) reply = "We accept COD, Bank Transfer (Metrobank/BDO/BPI), and GCash. Bank/GCash fields enforce digit limits during booking.";
-        setMessages(prev => [...prev, { from: 'user', text: input }, { from: 'assistant', text: reply }]);
+        const text = input.toLowerCase();
+        let reply = "I can help with booking, schedules, or payment.";
+        if (text.includes('book')) reply = "Click 'Book Now' beside a service, fill in your info, and confirm.";
+        if (text.includes('pay')) reply = "You can pay via COD, Bank Transfer (Metrobank, BDO, BPI), or GCash.";
+        if (text.includes('cancel')) reply = "You can cancel your booking after confirmation using the red 'Cancel Booking' button.";
+        setMsgs([...msgs, { from: 'user', text: input }, { from: 'bot', text: reply }]);
         setInput('');
       };
-
       return (
         <div className="flex flex-col h-80">
-          <div className="flex-1 overflow-auto space-y-2 bg-gray-50 p-2 rounded">
-            {messages.map((m,i) => <div key={i} className={m.from === 'assistant' ? 'bg-white p-2 rounded shadow text-sm' : 'text-right text-sm text-blue-700'}>{m.text}</div>)}
+          <div className="flex-1 overflow-auto bg-gray-50 p-2 rounded space-y-2">
+            {msgs.map((m,i)=> <div key={i} className={m.from==='bot'?'bg-white p-2 rounded shadow text-sm':'text-right text-blue-700 text-sm'}>{m.text}</div>)}
           </div>
           <form onSubmit={send} className="mt-2 flex gap-2">
-            <input value={input} onChange={e => setInput(e.target.value)} placeholder="Ask SafeBot..." className="flex-1 border rounded px-3 py-2 text-sm" />
+            <input value={input} onChange={e=>setInput(e.target.value)} placeholder="Ask SafeBot..." className="flex-1 border rounded px-3 py-2 text-sm"/>
             <button className="bg-blue-600 text-white px-3 py-2 rounded text-sm">Send</button>
           </form>
         </div>
       );
     }
 
-    /* ===========================
-       Render App
-       =========================== */
     ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   </script>
 </body>
